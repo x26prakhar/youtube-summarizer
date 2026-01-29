@@ -1,5 +1,15 @@
+import os
 import re
 from youtube_transcript_api import YouTubeTranscriptApi
+from youtube_transcript_api.proxies import WebshareProxyConfig
+
+
+def get_proxy_config():
+    """Get proxy configuration from environment variables."""
+    proxy_url = os.environ.get("WEBSHARE_PROXY_URL")
+    if proxy_url:
+        return WebshareProxyConfig(proxy_url)
+    return None
 
 
 def extract_video_id(url: str) -> str:
@@ -20,7 +30,8 @@ def extract_video_id(url: str) -> str:
 
 def get_transcript(video_id: str) -> list[dict]:
     """Fetch transcript from YouTube."""
-    api = YouTubeTranscriptApi()
+    proxy_config = get_proxy_config()
+    api = YouTubeTranscriptApi(proxy_config=proxy_config)
     try:
         transcript = api.fetch(video_id)
         # Convert to list of dicts for compatibility
