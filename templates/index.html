@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Transcript Summarizer</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>YouTube Transcript Summarizer</h1>
+        <p class="subtitle">Extract key takeaways and clean transcripts from YouTube videos</p>
+
+        <div class="input-section">
+            <input type="text" id="url-input" placeholder="Paste YouTube URL here..." />
+            <button id="submit-btn" onclick="processVideo()">Summarize</button>
+        </div>
+
+        <div id="loading" class="loading hidden">
+            <div class="spinner"></div>
+            <p>Processing video... This may take a moment.</p>
+        </div>
+
+        <div id="error" class="error hidden"></div>
+
+        <div id="results" class="results hidden">
+            <div class="result-header">
+                <h2>Results</h2>
+                <div class="download-buttons">
+                    <button id="download-word-btn" class="download-btn" onclick="downloadWord()">Download Word</button>
+                    <button id="download-md-btn" class="download-btn secondary" onclick="downloadMarkdown()">Download Markdown</button>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>Key Takeaways</h3>
+                <div id="summary" class="content markdown"></div>
+            </div>
+
+            <div class="section">
+                <h3>Clean Transcript</h3>
+                <div id="notes" class="content markdown"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentFilename = '';
+        let currentDocxFilename = '';
+
+        async function processVideo() {
+            const url = document.getElementById('url-input').value.trim();
+            if (!url) {
+                showError('Please enter a YouTube URL');
+                return;
+            }
+
+            // Reset UI
+            document.getElementById('loading').classList.remove('hidden');
+            document.getElementById('results').classList.add('hidden');
+            document.getElementById('error').classList.add('hidden');
+            document.getElementById('submit-btn').disabled = true;
+
+            try {
+                const response = await fetch('/process', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.detail || 'Failed to process video');
+                }
+
+                // Display results
+                document.getElementById('summary').innerHTML = markdownToHtml(data.summary);
+                document.getElementById('notes').innerHTML = markdownToHtml(data.notes);
+                currentFilename = data.filename;
+                currentDocxFilename = data.docx_filename;
+
+                document.getElementById('results').classList.remove('hidden');
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('submit-btn').disabled = false;
+            }
+        }
+
+        function showError(message) {
+            const errorEl = document.getElementById('error');
+            errorEl.textContent = message;
+            errorEl.classList.remove('hidden');
+        }
+
+        function downloadWord() {
+            if (currentDocxFilename) {
+                window.location.href = `/download/${currentDocxFilename}`;
+            }
+        }
+
+        function downloadMarkdown() {
+            if (currentFilename) {
+                window.location.href = `/download/${currentFilename}`;
+            }
+        }
+
+        // Simple markdown to HTML converter
+        function markdownToHtml(text) {
+            return text
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/^### (.*$)/gm, '<h4>$1</h4>')
+                .replace(/^## (.*$)/gm, '<h3>$1</h3>')
+                .replace(/^# (.*$)/gm, '<h2>$1</h2>')
+                .replace(/^- (.*$)/gm, '<li>$1</li>')
+                .replace(/^\d+\. (.*$)/gm, '<li>$1</li>')
+                .replace(/\n\n/g, '</p><p>')
+                .replace(/\n/g, '<br>');
+        }
+
+        // Allow Enter key to submit
+        document.getElementById('url-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                processVideo();
+            }
+        });
+    </script>
+</body>
+</html>

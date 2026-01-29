@@ -1,0 +1,16 @@
+# Environment
+.env
+venv/
+.venv/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Outputs (optional - remove this line if you want to keep outputs in repo)
+outputs/
+
+# IDE
+.vscode/
+.idea/
