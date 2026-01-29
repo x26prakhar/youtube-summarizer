@@ -8,18 +8,11 @@ def get_proxy_config():
     """Get proxy configuration from environment variables."""
     proxy_url = os.environ.get("WEBSHARE_PROXY_URL")
     if proxy_url:
-        # Parse URL: http://username:password@host:port
-        # Extract parts from URL like http://user:pass@1.2.3.4:8080
-        import re
-        match = re.match(r'https?://([^:]+):([^@]+)@([^:]+):(\d+)', proxy_url)
-        if match:
-            username, password, host, port = match.groups()
-            return GenericProxyConfig(
-                http_url=f"http://{host}:{port}",
-                https_url=f"http://{host}:{port}",
-                username=username,
-                password=password
-            )
+        # GenericProxyConfig takes the full URL with credentials
+        return GenericProxyConfig(
+            http_url=proxy_url,
+            https_url=proxy_url
+        )
     return None
 
 
